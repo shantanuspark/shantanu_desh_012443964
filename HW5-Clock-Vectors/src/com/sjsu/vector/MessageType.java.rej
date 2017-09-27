@@ -1,0 +1,10 @@
+diff a/hw5/clocks/src/com/sjsu/vector/MessageType.java b/hw5/clocks/src/com/sjsu/vector/MessageType.java	(rejected hunks)
+@@ -9,7 +9,7 @@
+ 	/**
+ 	 * Indicates that a computation event is being performed
+ 	 */
+-    COMPUTATION,
++    COMPUTATION, SEND, RECEIVE
+     //TODO: Add more message types SEND and RECIEVE
+     
+ }
