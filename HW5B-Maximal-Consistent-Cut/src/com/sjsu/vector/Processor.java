@@ -113,9 +113,9 @@ public class Processor implements Observer {
 	 * @param vc
 	 */
 	public void addToStore(VectorClock vc) {
-		int a = this.getVectorClock().getVectorClock()[0];
-		int b = this.getVectorClock().getVectorClock()[1];
-		int c = this.getVectorClock().getVectorClock()[2];
+		int a = vc.getVectorClock()[0];
+		int b = vc.getVectorClock()[1];
+		int c = vc.getVectorClock()[2];
 
 		VectorClock nvc = new VectorClock(new int[] { a, b, c });
 
