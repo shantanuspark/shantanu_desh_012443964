@@ -31,14 +31,17 @@ public class Recorder extends Thread {
 	public void run() {
 		int lastIdx = channel.getTotalMessageCount() - 1;
 		List<Message> recordedMessagesSinceMarker = new ArrayList<>();
-		while(lastIdx >= 0) {
-			Message message = channel.getMessage(lastIdx);
-			if(MessageType.MARKER.equals(message.getMessageType()))
-				break;
-			recordedMessagesSinceMarker.add(message);
-			lastIdx--;
+
+		while(true) {
+			if(channel.getTotalMessageCount()-1 > lastIdx) {
+				Message m = channel.getMessage(channel.getTotalMessageCount()-1);
+				lastIdx = channel.getTotalMessageCount()-1;
+				recordedMessagesSinceMarker.add(m);
+				if(Thread.interrupted()) {
+					channelState.put(channel, recordedMessagesSinceMarker);
+				}
+			}
 		}
-		channelState.put(channel, recordedMessagesSinceMarker);
 	}
 
 }

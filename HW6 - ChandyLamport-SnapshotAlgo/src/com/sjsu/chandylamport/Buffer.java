@@ -3,6 +3,7 @@ package com.sjsu.chandylamport;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Observable;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Observable Buffer of each node
@@ -19,7 +20,7 @@ public class Buffer extends Observable {
      * Creates empty buffer
      */
     public Buffer(String label) {
-        messages = new ArrayList<>();
+        messages = new CopyOnWriteArrayList<Message>();
         this.label = label;
     }
 

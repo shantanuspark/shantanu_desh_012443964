@@ -23,7 +23,7 @@ public class Processor implements Observer {
 
 	Map<Buffer, List<Message>> channelState = null;
 
-	Map<Processor, Integer> processorMarkerCount = null;
+	Map<Buffer, Recorder> channelRecorderMap = null;
 	
 	Integer id;
 	boolean isInitiator = false;
@@ -40,8 +40,8 @@ public class Processor implements Observer {
 		this.outChannels = outChannels;
 		inChannels.forEach(inChannel -> inChannel.addObserver(this));
 		
-		processorMarkerCount = new HashMap<Processor, Integer>();
 		channelState = new HashMap<Buffer, List<Message>>();
+		channelRecorderMap = new HashMap<Buffer, Recorder>();
 	}
 
 	/**
@@ -77,6 +77,8 @@ public class Processor implements Observer {
 		System.out.println("Recording on incoming channel "+channel.label+" started...");
 		//Starts threaded recording on the given channel
 		channelRecorder.start();
+		//put recorder thread in the recorder hashmap so that we can stop it when required
+		channelRecorderMap.put(channel, channelRecorder);
 
 	}
 
@@ -97,8 +99,9 @@ public class Processor implements Observer {
 	 * Checks if the processor has received a marker message before
 	 * @return true if this is the first marker false otherwise
 	 */
-	public boolean isFirstMarker() {
-		if(processorMarkerCount.containsKey(this) && processorMarkerCount.get(this)>0)
+	public boolean isFirstMarker(Buffer channel) {
+		//if recording has not started on the channel then this is the first marker so return false
+		if(channelRecorderMap.containsKey(channel))
 			return false;
 		return true;
 	}
@@ -112,10 +115,9 @@ public class Processor implements Observer {
 		Message message = buffer.getMessage(buffer.getTotalMessageCount() - 1);
 		if (message.getMessageType().equals(MessageType.MARKER)) {
 			Buffer fromChannel = (Buffer) observable;
-			if (isFirstMarker()) {
+			if (isFirstMarker(fromChannel)) {
 				recordMyCurrentState();
 				recordChannelAsEmpty(fromChannel);
-				processorMarkerCount.put(this, processorMarkerCount.get(this)==null?1:processorMarkerCount.get(this) + 1);
 				
 				// From the other incoming Channels (excluding the fromChannel which has sent the marker) start recording messages
 				for (Buffer inChannel : inChannels) {
@@ -126,10 +128,12 @@ public class Processor implements Observer {
 
 				// Sending marker messages to each of the out channels
 				for (Buffer outChannel : outChannels) {
+					System.out.println("Sending Marker Message on channel "+outChannel.getLabel());
 					sendMessgeTo(new Message(MessageType.MARKER), outChannel);
 				}
 			} else {
-				System.out.println("Duplicate Marker Message received for Processor"+this.id+", stopping recording");
+				System.out.println("Duplicate Marker Message received on channel "+fromChannel.getLabel()+", stopping recording...");
+				channelRecorderMap.get(fromChannel).interrupt();
 			}
 
 		} else {
@@ -146,13 +150,12 @@ public class Processor implements Observer {
 	public void initiateSnapShot() {
 		// Recording own state before sending marker messages to other processors
 		recordMyCurrentState();
-		// Adding dummy marker counts to the initiator node so as to avoid re-recording of its states
-		processorMarkerCount.put(this, 1);
 		
 		// Start recording messages on all incoming channels
 		inChannels.forEach(inChannel -> recordChannel(inChannel));
 		
 		// Sending marker message on each outgoing channel
+		outChannels.forEach(outChannel -> System.out.println("Sending Marker Message on channel "+outChannel.getLabel()));
 		outChannels.forEach(outChannel -> sendMessgeTo(new Message(MessageType.MARKER), outChannel));
 	}
 
